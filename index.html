@@ -107,6 +107,7 @@
       pointer-events: none;
       will-change: transform;
       /* Remove CSS width/height - will be set by JS to match attributes */
+      display: block;
     }
 
     .content-wrapper { 
@@ -255,31 +256,37 @@
     const canvas = document.getElementById('dotCanvas');
     const ctx = canvas.getContext('2d');
     let dots = [];
-    const numDots = 80;
+    const numDots = 120; // Increased for better coverage
     const cursorInfluence = 120;
     const connectionDistance = 150;
     let mouse = { x: null, y: null, pageX: null, pageY: null };
 
-    // Set canvas to cover the entire document height
-    function resizeCanvas() {
-      // Get the full document height
+    // Get the full page height including all content
+    function getFullPageHeight() {
       const body = document.body;
       const html = document.documentElement;
-      const height = Math.max(
-        body.scrollHeight, 
-        body.offsetHeight, 
-        html.clientHeight, 
-        html.scrollHeight, 
+      return Math.max(
+        body.scrollHeight,
+        body.offsetHeight,
+        html.clientHeight,
+        html.scrollHeight,
         html.offsetHeight
       );
+    }
+
+    // Set canvas to cover the entire page height
+    function resizeCanvas() {
+      const fullHeight = getFullPageHeight();
       
       // Set canvas dimensions (actual pixel dimensions)
       canvas.width = window.innerWidth;
-      canvas.height = height;
+      canvas.height = fullHeight;
       
       // Also set CSS dimensions to match (prevents stretching)
       canvas.style.width = window.innerWidth + 'px';
-      canvas.style.height = height + 'px';
+      canvas.style.height = fullHeight + 'px';
+      
+      console.log('Canvas resized:', canvas.width, 'x', canvas.height);
       
       // Reinitialize dots with new canvas size
       initializeDots();
@@ -290,7 +297,7 @@
       dots = [];
       
       for (let i = 0; i < numDots; i++) {
-        // Distribute dots evenly throughout the entire canvas height
+        // Distribute dots evenly throughout the ENTIRE canvas height
         const x = Math.random() * canvas.width;
         const y = Math.random() * canvas.height;
         
@@ -307,10 +314,17 @@
         dots[i].originalVx = dots[i].vx;
         dots[i].originalVy = dots[i].vy;
       }
+      
+      console.log('Dots initialized:', dots.length, 'dots across height:', canvas.height);
     }
 
-    // Initial resize
-    resizeCanvas();
+    // Initial resize - wait for page to fully load
+    window.addEventListener('load', () => {
+      setTimeout(resizeCanvas, 100);
+    });
+    
+    // Also try initial resize now
+    setTimeout(resizeCanvas, 50);
     
     // Recalculate on window resize
     window.addEventListener('resize', resizeCanvas);
@@ -370,7 +384,8 @@
         const drawY = dot.y - scrollY;
         
         // Only draw if the dot is visible or near viewport
-        if (drawY < -100 || drawY > window.innerHeight + 100) {
+        // Increased margin to 200px to ensure smooth transitions
+        if (drawY < -200 || drawY > window.innerHeight + 200) {
           continue;
         }
 
@@ -385,7 +400,7 @@
           }
         }
 
-        // Draw the dot - now circular because canvas isn't stretched
+        // Draw the dot
         ctx.beginPath();
         ctx.arc(dot.x, drawY, dot.radius, 0, Math.PI * 2);
         const gradient = ctx.createRadialGradient(
@@ -405,14 +420,14 @@
         const drawY1 = dot1.y - scrollY;
         
         // Skip if dot1 is far outside viewport
-        if (drawY1 < -150 || drawY1 > window.innerHeight + 150) continue;
+        if (drawY1 < -250 || drawY1 > window.innerHeight + 250) continue;
         
         for (let j = i + 1; j < dots.length; j++) {
           const dot2 = dots[j];
           const drawY2 = dot2.y - scrollY;
           
           // Skip if dot2 is far outside viewport
-          if (drawY2 < -150 || drawY2 > window.innerHeight + 150) continue;
+          if (drawY2 < -250 || drawY2 > window.innerHeight + 250) continue;
           
           const dx = dot1.x - dot2.x;
           const dy = dot1.y - dot2.y;
