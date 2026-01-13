@@ -34,31 +34,39 @@
       background: #0b0614;
       overflow-x: hidden;
       margin: 0;
+      position: relative;
     }
 
-    .glow-border {
-      position: relative;
-      /* REMOVED: border and box-shadow properties */
+    /* Full-page glow overlay */
+    .glow-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
       --mouse-x: 50%;
       --mouse-y: 50%;
     }
 
-    .glow-border::before {
+    .glow-overlay::before {
       content: "";
       position: absolute;
-      inset: -2px;
-      border-radius: inherit;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       background: radial-gradient(
-        300px circle at var(--mouse-x) var(--mouse-y),
-        rgba(147, 197, 253, 0.9),
-        rgba(59, 130, 246, 0.4),
-        transparent 60%
+        400px circle at var(--mouse-x) var(--mouse-y),
+        rgba(147, 197, 253, 0.25),
+        rgba(59, 130, 246, 0.1),
+        transparent 70%
       );
       pointer-events: none;
       z-index: -1;
-      transition: background-position 0.1s;
+      transition: background 0.15s;
       will-change: background;
-      transform: translateZ(0);
     }
 
     table {
@@ -94,12 +102,15 @@
       left: 0;
       width: 100%;
       height: 100%;
-      z-index: -1;
+      z-index: -2;
       pointer-events: none;
       will-change: transform;
     }
 
-    .content-wrapper { position: relative; z-index: 1; }
+    .content-wrapper { 
+      position: relative; 
+      z-index: 1; 
+    }
 
     .no-scroll {
       overflow: visible;
@@ -111,7 +122,10 @@
 <body class="font-sans text-gray-200">
   <canvas id="dotCanvas"></canvas>
   
-  <div class="content-wrapper max-w-6xl mx-auto p-10 glow-border rounded-2xl" id="glowTable">
+  <!-- Full-page glow overlay -->
+  <div class="glow-overlay" id="glowOverlay"></div>
+  
+  <div class="content-wrapper max-w-6xl mx-auto p-10">
     <h1 class="text-3xl font-bold mb-2 text-blue-200">
       Dialectical Journal — <em>A Doll's House</em>
     </h1>
@@ -120,7 +134,7 @@
       <strong>Pages Covered:</strong> 1–100 (Act I)
     </p>
 
-    <div class="no-scroll">
+    <div class="no-scroll rounded-2xl">
       <table class="w-full">
         <thead>
           <tr class="bg-[#1a1033] text-blue-200">
@@ -170,32 +184,27 @@
   </div>
 
   <script>
-    // Glow border mouse tracking with throttling for performance
+    // Full-page glow effect that follows cursor everywhere
     (function() {
-      const glowEl = document.getElementById('glowTable');
+      const glowEl = document.getElementById('glowOverlay');
       let lastMouse = { x: null, y: null };
       let animationFrameId = null;
       let lastUpdateTime = 0;
       const UPDATE_INTERVAL = 16; // ~60fps
 
-      function setGlowPositionClient(clientX, clientY) {
-        const rect = glowEl.getBoundingClientRect();
-        // Use percentage for smoother calculations
-        const percentX = ((clientX - rect.left) / rect.width) * 100;
-        const percentY = ((clientY - rect.top) / rect.height) * 100;
+      function setGlowPosition(clientX, clientY) {
+        const percentX = (clientX / window.innerWidth) * 100;
+        const percentY = (clientY / window.innerHeight) * 100;
         
-        const clampedX = Math.max(0, Math.min(percentX, 100));
-        const clampedY = Math.max(0, Math.min(percentY, 100));
-        
-        glowEl.style.setProperty('--mouse-x', `${clampedX}%`);
-        glowEl.style.setProperty('--mouse-y', `${clampedY}%`);
+        glowEl.style.setProperty('--mouse-x', `${percentX}%`);
+        glowEl.style.setProperty('--mouse-y', `${percentY}%`);
       }
 
       function updateGlowPosition() {
         if (lastMouse.x !== null && lastMouse.y !== null) {
           const now = Date.now();
           if (now - lastUpdateTime >= UPDATE_INTERVAL) {
-            setGlowPositionClient(lastMouse.x, lastMouse.y);
+            setGlowPosition(lastMouse.x, lastMouse.y);
             lastUpdateTime = now;
           }
         }
@@ -225,11 +234,10 @@
 
       function recomputeOnLayoutChange() {
         if (lastMouse.x !== null && lastMouse.y !== null) {
-          setGlowPositionClient(lastMouse.x, lastMouse.y);
+          setGlowPosition(lastMouse.x, lastMouse.y);
         }
       }
 
-      window.addEventListener('scroll', recomputeOnLayoutChange, { passive: true });
       window.addEventListener('resize', recomputeOnLayoutChange);
 
       // Clean up animation frame
@@ -252,7 +260,7 @@
 
     const mouse = { x: null, y: null };
     const dots = [];
-    const numDots = 100; // Reduced for better performance
+    const numDots = 100;
     const cursorInfluence = 120;
     const connectionDistance = 150;
 
@@ -260,9 +268,9 @@
       constructor() {
         this.x = Math.random() * canvas.width;
         this.y = Math.random() * canvas.height;
-        this.vx = (Math.random() - 0.5) * 0.15; // Slower movement
+        this.vx = (Math.random() - 0.5) * 0.15;
         this.vy = (Math.random() - 0.5) * 0.15;
-        this.radius = Math.random() * 2 + 1.5; // Smaller dots
+        this.radius = Math.random() * 2 + 1.5;
         this.originalVx = this.vx;
         this.originalVy = this.vy;
       }
@@ -278,7 +286,7 @@
           const dist = Math.sqrt(dx * dx + dy * dy) || 0.0001;
           if (dist < cursorInfluence) {
             const force = (cursorInfluence - dist) / cursorInfluence;
-            const pushStrength = 0.08; // Reduced strength
+            const pushStrength = 0.08;
             this.vx += (dx / dist) * force * pushStrength;
             this.vy += (dy / dist) * force * pushStrength;
           }
@@ -333,7 +341,7 @@
     function animate() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw connections (optimized with distance check)
+      // Draw connections
       for (let i = 0; i < dots.length; i++) {
         for (let j = i + 1; j < dots.length; j++) {
           const dx = dots[i].x - dots[j].x;
