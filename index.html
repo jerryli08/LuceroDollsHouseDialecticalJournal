@@ -28,9 +28,14 @@
       --mouse-y: 50%;
     }
 
+    html, body {
+      height: 100%;
+    }
+
     body {
       background: #0b0614;
       overflow-x: hidden;
+      margin: 0;
     }
 
     .glow-border {
@@ -55,12 +60,20 @@
       z-index: -1;
     }
 
+    table {
+      border-collapse: collapse;
+      /* help avoid unexpected overflow by fixing layout */
+      table-layout: fixed;
+      width: 100%;
+    }
+
     table th,
     table td {
       border-color: rgba(96, 165, 250, 0.5);
-      box-shadow: 
+      box-shadow:
         0 0 10px rgba(96, 165, 250, 0.3),
         inset 0 0 5px rgba(96, 165, 250, 0.2);
+      word-break: break-word;
     }
 
     canvas {
@@ -77,6 +90,13 @@
       position: relative;
       z-index: 1;
     }
+
+    /* small helper to remove scrollbars inside the table container */
+    .no-scroll {
+      overflow: visible; /* prevents internal scrollbars */
+      /* 65% translucent background */
+      background: rgba(18, 10, 36, 0.65);
+    }
   </style>
 </head>
 
@@ -92,8 +112,9 @@
       <strong>Pages Covered:</strong> 1–100 (Act I)
     </p>
 
-    <div class="overflow-x-auto glow-border rounded-2xl bg-[#120a24]">
-      <table class="w-full border-collapse">
+    <!-- replaced overflow-x-auto with no-scroll and applied translucent background -->
+    <div class="no-scroll glow-border rounded-2xl">
+      <table class="w-full">
         <thead>
           <tr class="bg-[#1a1033] text-blue-200">
             <th class="border p-4 w-1/2 text-left">
@@ -184,53 +205,62 @@
       document.documentElement.style.setProperty("--mouse-y", `${e.clientY}px`);
     });
 
-    // Floating dots canvas animation
+    // Floating dots canvas animation - tuned for slower, bigger, brighter dots
     const canvas = document.getElementById('dotCanvas');
     const ctx = canvas.getContext('2d');
     
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    window.addEventListener('resize', () => {
+    function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-    });
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
 
     const mouse = { x: null, y: null };
+
     const dots = [];
     const numDots = 150;
+
+    // Reduced influence radius so cursor affects a smaller area
+    let cursorInfluence = 120; // previously 200
+
+    // Distance for connecting lines
     const connectionDistance = 150;
-    const cursorInfluence = 200;
 
     class Dot {
       constructor() {
         this.x = Math.random() * canvas.width;
         this.y = Math.random() * canvas.height;
-        this.vx = (Math.random() - 0.5) * 0.5;
-        this.vy = (Math.random() - 0.5) * 0.5;
-        this.radius = Math.random() * 2 + 1;
+        // make base speeds smaller so dots feel more "stable"
+        this.vx = (Math.random() - 0.5) * 0.2; // smaller range than before
+        this.vy = (Math.random() - 0.5) * 0.2;
+        this.radius = Math.random() * 3 + 2; // larger: between ~2 and ~5
         this.originalVx = this.vx;
         this.originalVy = this.vy;
       }
 
       update() {
-        // Move toward original velocity
-        this.vx += (this.originalVx - this.vx) * 0.05;
-        this.vy += (this.originalVy - this.vy) * 0.05;
+        // Stronger damping back to original velocity -> harder to permanently push dots
+        const returnFactor = 0.12; // increased from 0.05
+        this.vx += (this.originalVx - this.vx) * returnFactor;
+        this.vy += (this.originalVy - this.vy) * returnFactor;
 
-        // Cursor interaction - push dots away
+        // Cursor interaction - push dots away but with much smaller force
         if (mouse.x !== null && mouse.y !== null) {
           const dx = this.x - mouse.x;
           const dy = this.y - mouse.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          
+          const dist = Math.sqrt(dx * dx + dy * dy) || 0.0001;
+
           if (dist < cursorInfluence) {
             const force = (cursorInfluence - dist) / cursorInfluence;
-            this.vx += (dx / dist) * force * 0.5;
-            this.vy += (dy / dist) * force * 0.5;
+            // reduce multiplier so dots are harder to move
+            const pushStrength = 0.12; // previously 0.5
+            this.vx += (dx / dist) * force * pushStrength;
+            this.vy += (dy / dist) * force * pushStrength;
           }
         }
 
+        // update position
         this.x += this.vx;
         this.y += this.vy;
 
@@ -242,35 +272,37 @@
       }
 
       draw() {
-        // Calculate distance to mouse for glow intensity
-        let glowIntensity = 0.3;
+        // brighter base glow intensity
+        let glowIntensity = 0.6; // was 0.3
         if (mouse.x !== null && mouse.y !== null) {
           const dx = this.x - mouse.x;
           const dy = this.y - mouse.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
           
           if (dist < cursorInfluence * 1.5) {
-            glowIntensity = 0.3 + (1 - dist / (cursorInfluence * 1.5)) * 0.7;
+            glowIntensity = 0.6 + (1 - dist / (cursorInfluence * 1.5)) * 0.6;
           }
         }
 
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        
-        // Create gradient for glow effect
+
+        // Create radial gradient for a stronger glow
         const gradient = ctx.createRadialGradient(
           this.x, this.y, 0,
-          this.x, this.y, this.radius * 4
+          this.x, this.y, this.radius * 6
         );
         gradient.addColorStop(0, `rgba(147, 197, 253, ${glowIntensity})`);
-        gradient.addColorStop(0.5, `rgba(96, 165, 250, ${glowIntensity * 0.5})`);
+        gradient.addColorStop(0.5, `rgba(96, 165, 250, ${Math.min(0.9, glowIntensity * 0.7)})`);
         gradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
-        
+
         ctx.fillStyle = gradient;
         ctx.fill();
-        
-        // Draw solid center
-        ctx.fillStyle = `rgba(147, 197, 253, ${glowIntensity * 0.8})`;
+
+        // Draw a brighter solid center
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius * 0.55, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(147, 197, 253, ${Math.min(1, glowIntensity * 0.95)})`;
         ctx.fill();
       }
     }
@@ -303,7 +335,7 @@
           const dist = Math.sqrt(dx * dx + dy * dy);
 
           if (dist < connectionDistance) {
-            const opacity = (1 - dist / connectionDistance) * 0.2;
+            const opacity = (1 - dist / connectionDistance) * 0.18;
             ctx.strokeStyle = `rgba(96, 165, 250, ${opacity})`;
             ctx.lineWidth = 0.5;
             ctx.beginPath();
