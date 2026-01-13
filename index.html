@@ -104,7 +104,7 @@
       top: 0;
       left: 0;
       width: 100%;
-      height: 100vh; /* Changed to 100vh but positioned absolutely */
+      height: 100%; /* Fixed: Changed from 100vh to 100% */
       z-index: -2;
       pointer-events: none;
       will-change: transform;
@@ -185,24 +185,6 @@
     <p class="mt-8 text-gray-300 max-w-4xl">
       <strong>Overall Reflection:</strong> Act I establishes the contrast between appearance and reality—the perfect dollhouse versus the secret debts, the childish wife versus the cunning strategist. Ibsen meticulously lays the groundwork for Nora's awakening by showing how every "harmless" interaction with Torvald (pet names, allowance, lectures) reinforces her subjugation. The arrival of Krogstad turns the psychological tension into concrete peril, setting the stage for the collapse of Nora's carefully constructed façade.
     </p>
-    
-    <!-- Adding some extra content to make scrolling more noticeable -->
-    <div class="mt-16 pt-16 border-t border-blue-900/30">
-      <h2 class="text-2xl font-bold mb-4 text-blue-200">Additional Notes</h2>
-      <div class="space-y-6 text-gray-300">
-        <p>In Act I, Ibsen masterfully sets up the central conflict of the play through the character of Nora Helmer. At first glance, she appears to be the stereotypical 19th-century wife—frivolous, childlike, and entirely dependent on her husband Torvald. However, as the act progresses, we learn that Nora is far more complex than she initially appears.</p>
-        
-        <p>The act is structured around a series of revelations that gradually peel back the layers of Nora's character. We learn about her secret loan, her forgery of her father's signature, and her clandestine efforts to repay the debt through various means. Each revelation challenges the audience's initial perception of Nora and deepens our understanding of her predicament.</p>
-        
-        <p>Torvald Helmer is portrayed as the quintessential patriarchal figure—proud, moralistic, and utterly convinced of his own superiority. His treatment of Nora, while not intentionally cruel, is infantilizing and demeaning. He refers to her with pet names like "little squirrel" and "little lark," and he controls every aspect of her life, from her spending habits to her daily activities.</p>
-        
-        <p>The introduction of Krogstad, the morally ambiguous lawyer who holds Nora's secret, serves as the catalyst for the play's central conflict. Krogstad represents the harsh realities of the world outside the Helmers' comfortable home—a world where survival often requires moral compromise. His threat to expose Nora's crime creates the dramatic tension that will drive the remainder of the play.</p>
-        
-        <p>Act I also introduces several important themes that will be developed throughout the play: the conflict between appearance and reality, the nature of personal freedom, the constraints of social roles, and the moral ambiguity of necessary actions. Ibsen's careful construction of these themes in the first act lays the foundation for the powerful drama that will unfold in Acts II and III.</p>
-        
-        <p>The act ends with Nora's realization that her secret may be exposed, creating a cliffhanger that propels the audience into the next act. Her final lines—"Something glorious is going to happen"—are filled with dramatic irony, as the audience understands that the "glorious" event she anticipates (Torvald's heroic intervention) is unlikely to occur.</p>
-      </div>
-    </div>
   </div>
 
   <script>
@@ -289,15 +271,6 @@
       
       canvas.width = window.innerWidth;
       canvas.height = height; // Full document height
-      
-      // Update dots if they already exist
-      if (dots.length > 0) {
-        dots.forEach(dot => {
-          // Ensure dots stay within the new canvas bounds
-          if (dot.x > canvas.width) dot.x = canvas.width;
-          if (dot.y > canvas.height) dot.y = canvas.height;
-        });
-      }
     }
     
     resizeCanvas();
@@ -307,86 +280,24 @@
 
     const mouse = { x: null, y: null, pageX: null, pageY: null };
     const dots = [];
-    const numDots = 80; // Slightly fewer dots for better performance with larger canvas
+    const numDots = 60; // Reduced number for better performance
     const cursorInfluence = 120;
     const connectionDistance = 150;
 
-    class Dot {
-      constructor() {
-        // Initialize dots within the full document space
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        this.vx = (Math.random() - 0.5) * 0.1; // Slower movement
-        this.vy = (Math.random() - 0.5) * 0.1;
-        this.radius = Math.random() * 2 + 1;
-        this.originalVx = this.vx;
-        this.originalVy = this.vy;
-      }
-
-      update(scrollY) {
-        const returnFactor = 0.08;
-        this.vx += (this.originalVx - this.vx) * returnFactor;
-        this.vy += (this.originalVy - this.vy) * returnFactor;
-
-        if (mouse.pageX !== null && mouse.pageY !== null) {
-          // Use page-relative mouse position for interaction
-          const dx = this.x - mouse.pageX;
-          const dy = this.y - (mouse.pageY + scrollY); // Adjust for scroll
-          const dist = Math.sqrt(dx * dx + dy * dy) || 0.0001;
-          if (dist < cursorInfluence) {
-            const force = (cursorInfluence - dist) / cursorInfluence;
-            const pushStrength = 0.06; // Reduced strength
-            this.vx += (dx / dist) * force * pushStrength;
-            this.vy += (dy / dist) * force * pushStrength;
-          }
-        }
-
-        this.x += this.vx;
-        this.y += this.vy;
-
-        // Wrap around the full page boundaries
-        if (this.x < 0) this.x = canvas.width;
-        if (this.x > canvas.width) this.x = 0;
-        if (this.y < 0) this.y = canvas.height;
-        if (this.y > canvas.height) this.y = 0;
-      }
-
-      draw(scrollY) {
-        // Draw dots relative to current scroll position
-        const drawX = this.x;
-        const drawY = this.y - scrollY;
-        
-        // Only draw if the dot is within or near the viewport
-        if (drawY < -50 || drawY > window.innerHeight + 50) {
-          return; // Skip drawing dots far outside viewport for performance
-        }
-        
-        let glowIntensity = 0.4;
-        if (mouse.pageX !== null && mouse.pageY !== null) {
-          const dx = this.x - mouse.pageX;
-          const dy = this.y - (mouse.pageY + scrollY);
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < cursorInfluence * 1.5) {
-            glowIntensity = 0.4 + (1 - dist / (cursorInfluence * 1.5)) * 0.6;
-          }
-        }
-
-        ctx.beginPath();
-        ctx.arc(drawX, drawY, this.radius, 0, Math.PI * 2);
-        const gradient = ctx.createRadialGradient(
-          drawX, drawY, 0,
-          drawX, drawY, this.radius * 3
-        );
-        gradient.addColorStop(0, `rgba(147, 197, 253, ${glowIntensity})`);
-        gradient.addColorStop(0.7, `rgba(96, 165, 250, ${Math.min(0.6, glowIntensity * 0.4)})`);
-        gradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
-        ctx.fillStyle = gradient;
-        ctx.fill();
-      }
-    }
-
     // Initialize dots
-    for (let i = 0; i < numDots; i++) dots.push(new Dot());
+    for (let i = 0; i < numDots; i++) {
+      dots.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 0.15,
+        vy: (Math.random() - 0.5) * 0.15,
+        radius: Math.random() * 2 + 1,
+        originalVx: 0,
+        originalVy: 0
+      });
+      dots[i].originalVx = dots[i].vx;
+      dots[i].originalVy = dots[i].vy;
+    }
 
     document.addEventListener('mousemove', (e) => {
       mouse.x = e.clientX;
@@ -405,15 +316,74 @@
     function animate() {
       const scrollY = window.pageYOffset || document.documentElement.scrollTop;
       
+      // Clear only the visible portion for performance
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       // Update and draw dots
-      dots.forEach(dot => {
-        dot.update(scrollY);
-        dot.draw(scrollY);
-      });
+      for (let i = 0; i < dots.length; i++) {
+        const dot = dots[i];
+        
+        // Update dot position
+        const returnFactor = 0.08;
+        dot.vx += (dot.originalVx - dot.vx) * returnFactor;
+        dot.vy += (dot.originalVy - dot.vy) * returnFactor;
 
-      // Draw connections (only between visible dots for performance)
+        // Mouse interaction
+        if (mouse.pageX !== null && mouse.pageY !== null) {
+          const dx = dot.x - mouse.pageX;
+          const dy = dot.y - (mouse.pageY + scrollY);
+          const dist = Math.sqrt(dx * dx + dy * dy) || 0.0001;
+          if (dist < cursorInfluence) {
+            const force = (cursorInfluence - dist) / cursorInfluence;
+            const pushStrength = 0.06;
+            dot.vx += (dx / dist) * force * pushStrength;
+            dot.vy += (dy / dist) * force * pushStrength;
+          }
+        }
+
+        dot.x += dot.vx;
+        dot.y += dot.vy;
+
+        // Wrap around boundaries
+        if (dot.x < 0) dot.x = canvas.width;
+        if (dot.x > canvas.width) dot.x = 0;
+        if (dot.y < 0) dot.y = canvas.height;
+        if (dot.y > canvas.height) dot.y = 0;
+
+        // Calculate position for drawing (accounting for scroll)
+        const drawY = dot.y - scrollY;
+        
+        // Only draw if the dot is visible or near viewport
+        if (drawY < -50 || drawY > window.innerHeight + 50) {
+          continue;
+        }
+
+        // Calculate glow intensity based on mouse proximity
+        let glowIntensity = 0.4;
+        if (mouse.pageX !== null && mouse.pageY !== null) {
+          const dx = dot.x - mouse.pageX;
+          const dy = dot.y - (mouse.pageY + scrollY);
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < cursorInfluence * 1.5) {
+            glowIntensity = 0.4 + (1 - dist / (cursorInfluence * 1.5)) * 0.6;
+          }
+        }
+
+        // Draw the dot
+        ctx.beginPath();
+        ctx.arc(dot.x, drawY, dot.radius, 0, Math.PI * 2);
+        const gradient = ctx.createRadialGradient(
+          dot.x, drawY, 0,
+          dot.x, drawY, dot.radius * 3
+        );
+        gradient.addColorStop(0, `rgba(147, 197, 253, ${glowIntensity})`);
+        gradient.addColorStop(0.7, `rgba(96, 165, 250, ${Math.min(0.6, glowIntensity * 0.4)})`);
+        gradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
+        ctx.fillStyle = gradient;
+        ctx.fill();
+      }
+
+      // Draw connections between dots
       for (let i = 0; i < dots.length; i++) {
         const dot1 = dots[i];
         const drawY1 = dot1.y - scrollY;
@@ -434,7 +404,7 @@
           
           if (distSq < connectionDistance * connectionDistance) {
             const dist = Math.sqrt(distSq);
-            const opacity = (1 - dist / connectionDistance) * 0.12;
+            const opacity = (1 - dist / connectionDistance) * 0.15;
             ctx.strokeStyle = `rgba(96, 165, 250, ${opacity})`;
             ctx.lineWidth = 0.4;
             ctx.beginPath();
