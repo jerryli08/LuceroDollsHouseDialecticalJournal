@@ -100,9 +100,11 @@
     }
 
     canvas {
-      position: absolute;
+      position: fixed; /* CHANGED: Back to fixed so it doesn't scroll */
       top: 0;
       left: 0;
+      width: 100%;
+      height: 100%;
       z-index: -2;
       pointer-events: none;
       will-change: transform;
@@ -122,7 +124,7 @@
 </head>
 
 <body class="font-sans text-gray-200">
-  <!-- Canvas is now absolute positioned and will scroll with the page -->
+  <!-- Canvas is FIXED - it doesn't scroll with the page -->
   <canvas id="dotCanvas"></canvas>
   
   <!-- Full-page glow overlay (stays fixed) -->
@@ -251,189 +253,164 @@
       });
     })();
 
-    // Dots animation - dots are positioned relative to the page (document), not viewport
+    // Dots animation - COMPLETELY REWRITTEN approach
     const canvas = document.getElementById('dotCanvas');
     const ctx = canvas.getContext('2d');
-    let dots = [];
-    const numDots = 150; // Increased for better coverage
+    
+    // Set canvas size to viewport size (fixed position)
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    const mouse = { x: null, y: null };
+    const dots = [];
+    const numDots = 200; // Lots of dots for full coverage
     const cursorInfluence = 120;
     const connectionDistance = 150;
-    let mouse = { x: null, y: null, pageX: null, pageY: null };
-    let lastCanvasHeight = 0;
-    let dotsInitialized = false;
-
-    // Function to calculate the full page height
-    function getFullPageHeight() {
+    
+    // Get the total page height
+    function getTotalPageHeight() {
       const body = document.body;
       const html = document.documentElement;
-      
-      // Get all possible height measurements
-      const heights = [
+      return Math.max(
         body.scrollHeight,
         body.offsetHeight,
         html.clientHeight,
         html.scrollHeight,
-        html.offsetHeight,
-        document.documentElement.getBoundingClientRect().height
-      ];
-      
-      // Return the maximum height
-      return Math.max(...heights);
+        html.offsetHeight
+      );
     }
 
-    // Resize canvas to cover full page
-    function resizeCanvas() {
-      const fullHeight = getFullPageHeight();
-      const viewportWidth = window.innerWidth;
-      
-      // Only resize if the height has changed significantly (more than 10px)
-      if (Math.abs(fullHeight - lastCanvasHeight) > 10) {
-        // Set canvas pixel dimensions
-        canvas.width = viewportWidth;
-        canvas.height = fullHeight;
-        
-        // Set CSS dimensions to match
-        canvas.style.width = viewportWidth + 'px';
-        canvas.style.height = fullHeight + 'px';
-        
-        lastCanvasHeight = fullHeight;
-        
-        // Reinitialize dots if needed
-        if (!dotsInitialized || dots.length === 0) {
-          initializeDots();
-        } else {
-          // Adjust existing dots to stay within new bounds
-          for (let i = 0; i < dots.length; i++) {
-            const dot = dots[i];
-            if (dot.y > fullHeight) {
-              dot.y = Math.random() * fullHeight;
-            }
-          }
-        }
-      }
-    }
-
-    // Initialize dots throughout the entire canvas
-    function initializeDots() {
-      dots = [];
-      
-      // Create dots distributed throughout the entire canvas height
-      for (let i = 0; i < numDots; i++) {
-        // Even distribution with some randomness
-        const baseY = (i / numDots) * canvas.height;
-        const randomOffset = (Math.random() - 0.5) * 200; // ±100 pixels
-        
-        dots.push({
-          x: Math.random() * canvas.width,
-          y: Math.max(10, Math.min(canvas.height - 10, baseY + randomOffset)),
-          vx: (Math.random() - 0.5) * 0.15,
-          vy: (Math.random() - 0.5) * 0.1,
-          radius: Math.random() * 2 + 1.5,
-          originalVx: 0,
-          originalVy: 0
-        });
-        
-        dots[i].originalVx = dots[i].vx;
-        dots[i].originalVy = dots[i].vy;
-      }
-      
-      dotsInitialized = true;
-    }
-
-    // Initial setup
-    resizeCanvas();
+    // Track scroll position
+    let scrollY = 0;
+    let totalPageHeight = 0;
     
-    // Set up event listeners
-    window.addEventListener('resize', resizeCanvas);
-    window.addEventListener('load', () => {
-      // Resize after everything loads
-      setTimeout(resizeCanvas, 100);
-      setTimeout(resizeCanvas, 500); // Extra check
-    });
+    // Update scroll position
+    function updateScroll() {
+      scrollY = window.pageYOffset || document.documentElement.scrollTop;
+      totalPageHeight = getTotalPageHeight();
+    }
+    
+    // Initialize scroll tracking
+    updateScroll();
+    window.addEventListener('scroll', updateScroll);
+    window.addEventListener('resize', updateScroll);
 
-    // Continuous canvas size checking in animation loop
-    let resizeCheckCounter = 0;
-    const RESIZE_CHECK_INTERVAL = 60; // Check every 60 frames (~1 second at 60fps)
+    // Create dots in VIRTUAL page space (not canvas space)
+    // Dots exist in a virtual space that's as tall as the entire page
+    for (let i = 0; i < numDots; i++) {
+      // Create dots in virtual page coordinates
+      // x: 0 to window width (but will be converted to canvas coords)
+      // y: 0 to TOTAL PAGE HEIGHT
+      dots.push({
+        // Virtual X position (0 to window width)
+        vx: Math.random() * window.innerWidth,
+        // Virtual Y position in PAGE SPACE (0 to total page height)
+        vy: Math.random() * totalPageHeight,
+        // Velocity
+        velX: (Math.random() - 0.5) * 0.15,
+        velY: (Math.random() - 0.5) * 0.1,
+        radius: Math.random() * 2 + 1.5,
+        originalVelX: 0,
+        originalVelY: 0
+      });
+      
+      dots[i].originalVelX = dots[i].velX;
+      dots[i].originalVelY = dots[i].velY;
+    }
 
     document.addEventListener('mousemove', (e) => {
       mouse.x = e.clientX;
       mouse.y = e.clientY;
-      mouse.pageX = e.pageX;
-      mouse.pageY = e.pageY;
     });
 
     document.addEventListener('mouseleave', () => {
       mouse.x = null;
       mouse.y = null;
-      mouse.pageX = null;
-      mouse.pageY = null;
     });
 
     function animate() {
-      // Check canvas size periodically
-      resizeCheckCounter++;
-      if (resizeCheckCounter >= RESIZE_CHECK_INTERVAL) {
-        resizeCanvas();
-        resizeCheckCounter = 0;
-      }
+      // Update total page height periodically
+      totalPageHeight = getTotalPageHeight();
       
-      const scrollY = window.pageYOffset || document.documentElement.scrollTop;
-      
-      // Clear the entire canvas
+      // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
+      
       // Update and draw dots
       for (let i = 0; i < dots.length; i++) {
         const dot = dots[i];
         
-        // Update dot position
+        // Update velocities (return to original)
         const returnFactor = 0.08;
-        dot.vx += (dot.originalVx - dot.vx) * returnFactor;
-        dot.vy += (dot.originalVy - dot.vy) * returnFactor;
-
-        // Mouse interaction
-        if (mouse.pageX !== null && mouse.pageY !== null) {
-          const dx = dot.x - mouse.pageX;
-          const dy = dot.y - (mouse.pageY + scrollY);
+        dot.velX += (dot.originalVelX - dot.velX) * returnFactor;
+        dot.velY += (dot.originalVelY - dot.velY) * returnFactor;
+        
+        // Mouse interaction in VIRTUAL SPACE
+        // We need to convert mouse position to virtual space
+        if (mouse.x !== null && mouse.y !== null) {
+          // Mouse position in VIRTUAL space:
+          // mouse.x is already correct (0 to window width)
+          // mouse.y needs to be converted: clientY + scrollY = position in page
+          const mouseVirtualX = mouse.x;
+          const mouseVirtualY = mouse.y + scrollY;
+          
+          const dx = dot.vx - mouseVirtualX;
+          const dy = dot.vy - mouseVirtualY;
           const dist = Math.sqrt(dx * dx + dy * dy) || 0.0001;
+          
           if (dist < cursorInfluence) {
             const force = (cursorInfluence - dist) / cursorInfluence;
             const pushStrength = 0.08;
-            dot.vx += (dx / dist) * force * pushStrength;
-            dot.vy += (dy / dist) * force * pushStrength;
+            dot.velX += (dx / dist) * force * pushStrength;
+            dot.velY += (dy / dist) * force * pushStrength;
           }
         }
-
-        dot.x += dot.vx;
-        dot.y += dot.vy;
-
-        // Wrap around boundaries
-        if (dot.x < 0) dot.x = canvas.width;
-        if (dot.x > canvas.width) dot.x = 0;
-        if (dot.y < 0) dot.y = canvas.height;
-        if (dot.y > canvas.height) dot.y = 0;
-
-        // Calculate position for drawing (accounting for scroll)
-        const drawY = dot.y - scrollY;
         
-        // Draw all dots (no culling for now to ensure full coverage)
-        // Calculate glow intensity based on mouse proximity
+        // Update virtual position
+        dot.vx += dot.velX;
+        dot.vy += dot.velY;
+        
+        // Wrap horizontally
+        if (dot.vx < 0) dot.vx = window.innerWidth;
+        if (dot.vx > window.innerWidth) dot.vx = 0;
+        
+        // Wrap vertically in PAGE SPACE
+        if (dot.vy < 0) dot.vy = totalPageHeight;
+        if (dot.vy > totalPageHeight) dot.vy = 0;
+        
+        // Convert virtual position to canvas position for drawing
+        // x stays the same
+        // y = virtualY - scrollY (convert from page space to viewport space)
+        const canvasX = dot.vx;
+        const canvasY = dot.vy - scrollY;
+        
+        // Only draw if the dot is visible in the viewport (or slightly outside)
+        if (canvasY < -50 || canvasY > canvas.height + 50) {
+          continue;
+        }
+        
+        // Calculate glow intensity
         let glowIntensity = 0.5;
-        if (mouse.pageX !== null && mouse.pageY !== null) {
-          const dx = dot.x - mouse.pageX;
-          const dy = dot.y - (mouse.pageY + scrollY);
+        if (mouse.x !== null && mouse.y !== null) {
+          const mouseVirtualY = mouse.y + scrollY;
+          const dx = dot.vx - mouse.x;
+          const dy = dot.vy - mouseVirtualY;
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < cursorInfluence * 1.5) {
             glowIntensity = 0.5 + (1 - dist / (cursorInfluence * 1.5)) * 0.6;
           }
         }
-
+        
         // Draw the dot
         ctx.beginPath();
-        ctx.arc(dot.x, drawY, dot.radius, 0, Math.PI * 2);
+        ctx.arc(canvasX, canvasY, dot.radius, 0, Math.PI * 2);
         const gradient = ctx.createRadialGradient(
-          dot.x, drawY, 0,
-          dot.x, drawY, dot.radius * 3
+          canvasX, canvasY, 0,
+          canvasX, canvasY, dot.radius * 3
         );
         gradient.addColorStop(0, `rgba(147, 197, 253, ${glowIntensity})`);
         gradient.addColorStop(0.7, `rgba(96, 165, 250, ${Math.min(0.7, glowIntensity * 0.5)})`);
@@ -441,33 +418,40 @@
         ctx.fillStyle = gradient;
         ctx.fill();
       }
-
-      // Draw connections between dots
+      
+      // Draw connections
       for (let i = 0; i < dots.length; i++) {
         const dot1 = dots[i];
-        const drawY1 = dot1.y - scrollY;
+        const canvasY1 = dot1.vy - scrollY;
+        
+        // Skip if far outside viewport
+        if (canvasY1 < -100 || canvasY1 > canvas.height + 100) continue;
         
         for (let j = i + 1; j < dots.length; j++) {
           const dot2 = dots[j];
-          const drawY2 = dot2.y - scrollY;
+          const canvasY2 = dot2.vy - scrollY;
           
-          const dx = dot1.x - dot2.x;
-          const dy = dot1.y - dot2.y;
+          // Skip if far outside viewport
+          if (canvasY2 < -100 || canvasY2 > canvas.height + 100) continue;
+          
+          // Calculate distance in VIRTUAL SPACE
+          const dx = dot1.vx - dot2.vx;
+          const dy = dot1.vy - dot2.vy;
           const distSq = dx * dx + dy * dy;
           
           if (distSq < connectionDistance * connectionDistance) {
             const dist = Math.sqrt(distSq);
-            const opacity = (1 - dist / connectionDistance) * 0.2;
+            const opacity = (1 - dist / connectionDistance) * 0.15;
             ctx.strokeStyle = `rgba(96, 165, 250, ${opacity})`;
             ctx.lineWidth = 0.5;
             ctx.beginPath();
-            ctx.moveTo(dot1.x, drawY1);
-            ctx.lineTo(dot2.x, drawY2);
+            ctx.moveTo(dot1.vx, canvasY1);
+            ctx.lineTo(dot2.vx, canvasY2);
             ctx.stroke();
           }
         }
       }
-
+      
       requestAnimationFrame(animate);
     }
     
