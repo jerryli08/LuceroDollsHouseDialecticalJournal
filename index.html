@@ -311,8 +311,8 @@
         // Virtual Y position in PAGE SPACE (0 to total page height)
         vy: Math.random() * totalPageHeight,
         // Velocity - slightly faster for easier movement
-        velX: (Math.random() - 0.5) * 0.25, // Increased from 0.15
-        velY: (Math.random() - 0.5) * 0.15, // Increased from 0.1
+        velX: (Math.random() - 0.5) * 0.45, // Increased from 0.15
+        velY: (Math.random() - 0.5) * 0.35, // Increased from 0.1
         // BIGGER: Increased radius from 1.5-3.5 to 2-4
         radius: Math.random() * 2 + 2,
         originalVelX: 0,
@@ -362,7 +362,7 @@
           if (dist < cursorInfluence) {
             const force = (cursorInfluence - dist) / cursorInfluence;
             // EASIER TO MOVE: Increased pushStrength from 0.08 to 0.15
-            const pushStrength = 0.15;
+            const pushStrength = 0.35;
             dot.velX += (dx / dist) * force * pushStrength;
             dot.velY += (dy / dist) * force * pushStrength;
           }
