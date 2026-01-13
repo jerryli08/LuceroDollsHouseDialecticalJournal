@@ -106,7 +106,6 @@
       z-index: -2;
       pointer-events: none;
       will-change: transform;
-      /* Remove CSS width/height - will be set by JS to match attributes */
       display: block;
     }
 
@@ -256,55 +255,78 @@
     const canvas = document.getElementById('dotCanvas');
     const ctx = canvas.getContext('2d');
     let dots = [];
-    const numDots = 120; // Increased for better coverage
+    const numDots = 150; // Increased for better coverage
     const cursorInfluence = 120;
     const connectionDistance = 150;
     let mouse = { x: null, y: null, pageX: null, pageY: null };
+    let lastCanvasHeight = 0;
+    let dotsInitialized = false;
 
-    // Get the full page height including all content
+    // Function to calculate the full page height
     function getFullPageHeight() {
       const body = document.body;
       const html = document.documentElement;
-      return Math.max(
+      
+      // Get all possible height measurements
+      const heights = [
         body.scrollHeight,
         body.offsetHeight,
         html.clientHeight,
         html.scrollHeight,
-        html.offsetHeight
-      );
+        html.offsetHeight,
+        document.documentElement.getBoundingClientRect().height
+      ];
+      
+      // Return the maximum height
+      return Math.max(...heights);
     }
 
-    // Set canvas to cover the entire page height
+    // Resize canvas to cover full page
     function resizeCanvas() {
       const fullHeight = getFullPageHeight();
+      const viewportWidth = window.innerWidth;
       
-      // Set canvas dimensions (actual pixel dimensions)
-      canvas.width = window.innerWidth;
-      canvas.height = fullHeight;
-      
-      // Also set CSS dimensions to match (prevents stretching)
-      canvas.style.width = window.innerWidth + 'px';
-      canvas.style.height = fullHeight + 'px';
-      
-      console.log('Canvas resized:', canvas.width, 'x', canvas.height);
-      
-      // Reinitialize dots with new canvas size
-      initializeDots();
+      // Only resize if the height has changed significantly (more than 10px)
+      if (Math.abs(fullHeight - lastCanvasHeight) > 10) {
+        // Set canvas pixel dimensions
+        canvas.width = viewportWidth;
+        canvas.height = fullHeight;
+        
+        // Set CSS dimensions to match
+        canvas.style.width = viewportWidth + 'px';
+        canvas.style.height = fullHeight + 'px';
+        
+        lastCanvasHeight = fullHeight;
+        
+        // Reinitialize dots if needed
+        if (!dotsInitialized || dots.length === 0) {
+          initializeDots();
+        } else {
+          // Adjust existing dots to stay within new bounds
+          for (let i = 0; i < dots.length; i++) {
+            const dot = dots[i];
+            if (dot.y > fullHeight) {
+              dot.y = Math.random() * fullHeight;
+            }
+          }
+        }
+      }
     }
-    
+
     // Initialize dots throughout the entire canvas
     function initializeDots() {
       dots = [];
       
+      // Create dots distributed throughout the entire canvas height
       for (let i = 0; i < numDots; i++) {
-        // Distribute dots evenly throughout the ENTIRE canvas height
-        const x = Math.random() * canvas.width;
-        const y = Math.random() * canvas.height;
+        // Even distribution with some randomness
+        const baseY = (i / numDots) * canvas.height;
+        const randomOffset = (Math.random() - 0.5) * 200; // ±100 pixels
         
         dots.push({
-          x: x,
-          y: y,
-          vx: (Math.random() - 0.5) * 0.2,
+          x: Math.random() * canvas.width,
+          y: Math.max(10, Math.min(canvas.height - 10, baseY + randomOffset)),
+          vx: (Math.random() - 0.5) * 0.15,
           vy: (Math.random() - 0.5) * 0.1,
           radius: Math.random() * 2 + 1.5,
           originalVx: 0,
@@ -315,19 +337,23 @@
         dots[i].originalVy = dots[i].vy;
       }
       
-      console.log('Dots initialized:', dots.length, 'dots across height:', canvas.height);
+      dotsInitialized = true;
     }
 
-    // Initial resize - wait for page to fully load
-    window.addEventListener('load', () => {
-      setTimeout(resizeCanvas, 100);
-    });
+    // Initial setup
+    resizeCanvas();
     
-    // Also try initial resize now
-    setTimeout(resizeCanvas, 50);
-    
-    // Recalculate on window resize
+    // Set up event listeners
     window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('load', () => {
+      // Resize after everything loads
+      setTimeout(resizeCanvas, 100);
+      setTimeout(resizeCanvas, 500); // Extra check
+    });
+
+    // Continuous canvas size checking in animation loop
+    let resizeCheckCounter = 0;
+    const RESIZE_CHECK_INTERVAL = 60; // Check every 60 frames (~1 second at 60fps)
 
     document.addEventListener('mousemove', (e) => {
       mouse.x = e.clientX;
@@ -344,6 +370,13 @@
     });
 
     function animate() {
+      // Check canvas size periodically
+      resizeCheckCounter++;
+      if (resizeCheckCounter >= RESIZE_CHECK_INTERVAL) {
+        resizeCanvas();
+        resizeCheckCounter = 0;
+      }
+      
       const scrollY = window.pageYOffset || document.documentElement.scrollTop;
       
       // Clear the entire canvas
@@ -383,12 +416,7 @@
         // Calculate position for drawing (accounting for scroll)
         const drawY = dot.y - scrollY;
         
-        // Only draw if the dot is visible or near viewport
-        // Increased margin to 200px to ensure smooth transitions
-        if (drawY < -200 || drawY > window.innerHeight + 200) {
-          continue;
-        }
-
+        // Draw all dots (no culling for now to ensure full coverage)
         // Calculate glow intensity based on mouse proximity
         let glowIntensity = 0.5;
         if (mouse.pageX !== null && mouse.pageY !== null) {
@@ -419,15 +447,9 @@
         const dot1 = dots[i];
         const drawY1 = dot1.y - scrollY;
         
-        // Skip if dot1 is far outside viewport
-        if (drawY1 < -250 || drawY1 > window.innerHeight + 250) continue;
-        
         for (let j = i + 1; j < dots.length; j++) {
           const dot2 = dots[j];
           const drawY2 = dot2.y - scrollY;
-          
-          // Skip if dot2 is far outside viewport
-          if (drawY2 < -250 || drawY2 > window.innerHeight + 250) continue;
           
           const dx = dot1.x - dot2.x;
           const dy = dot1.y - dot2.y;
