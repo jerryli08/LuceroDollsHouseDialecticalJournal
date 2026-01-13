@@ -103,11 +103,10 @@
       position: absolute;
       top: 0;
       left: 0;
-      width: 100%;
-      height: 100%;
       z-index: -2;
       pointer-events: none;
       will-change: transform;
+      /* Remove CSS width/height - will be set by JS to match attributes */
     }
 
     .content-wrapper { 
@@ -255,65 +254,66 @@
     // Dots animation - dots are positioned relative to the page (document), not viewport
     const canvas = document.getElementById('dotCanvas');
     const ctx = canvas.getContext('2d');
-    
-    // Set canvas to cover the entire page height
+    let dots = [];
+    const numDots = 80;
+    const cursorInfluence = 120;
+    const connectionDistance = 150;
+    let mouse = { x: null, y: null, pageX: null, pageY: null };
+
+    // Set canvas to cover the entire document height
     function resizeCanvas() {
       // Get the full document height
       const body = document.body;
       const html = document.documentElement;
-      const contentHeight = document.querySelector('.content-wrapper').offsetHeight;
-      const padding = 100; // Extra padding for visual appeal
+      const height = Math.max(
+        body.scrollHeight, 
+        body.offsetHeight, 
+        html.clientHeight, 
+        html.scrollHeight, 
+        html.offsetHeight
+      );
       
-      // Use the content height plus padding
+      // Set canvas dimensions (actual pixel dimensions)
       canvas.width = window.innerWidth;
-      canvas.height = contentHeight + padding;
+      canvas.height = height;
+      
+      // Also set CSS dimensions to match (prevents stretching)
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = height + 'px';
+      
+      // Reinitialize dots with new canvas size
+      initializeDots();
     }
     
-    // Initial resize
-    resizeCanvas();
-    
-    // Recalculate canvas size after page loads
-    window.addEventListener('load', () => {
-      setTimeout(resizeCanvas, 100); // Small delay to ensure everything is loaded
-    });
-    
-    // Recalculate on window resize
-    window.addEventListener('resize', resizeCanvas);
-
-    const mouse = { x: null, y: null, pageX: null, pageY: null };
-    const dots = [];
-    const numDots = 80; // Good number for performance
-    const cursorInfluence = 120;
-    const connectionDistance = 150;
-
-    // Initialize dots after canvas is sized
+    // Initialize dots throughout the entire canvas
     function initializeDots() {
-      dots.length = 0; // Clear existing dots
+      dots = [];
       
-      // Distribute dots throughout the entire canvas height
       for (let i = 0; i < numDots; i++) {
-        // Distribute more evenly throughout the height
-        const yPos = (i / numDots) * canvas.height;
-        const yVariance = Math.random() * 100 - 50; // ±50 pixels variance
+        // Distribute dots evenly throughout the entire canvas height
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
         
         dots.push({
-          x: Math.random() * canvas.width,
-          y: Math.max(0, Math.min(canvas.height, yPos + yVariance)),
+          x: x,
+          y: y,
           vx: (Math.random() - 0.5) * 0.2,
           vy: (Math.random() - 0.5) * 0.1,
           radius: Math.random() * 2 + 1.5,
           originalVx: 0,
           originalVy: 0
         });
+        
         dots[i].originalVx = dots[i].vx;
         dots[i].originalVy = dots[i].vy;
       }
     }
+
+    // Initial resize
+    resizeCanvas();
     
-    // Initialize dots after canvas is ready
-    setTimeout(() => {
-      initializeDots();
-    }, 100);
+    // Recalculate on window resize
+    window.addEventListener('resize', resizeCanvas);
 
     document.addEventListener('mousemove', (e) => {
       mouse.x = e.clientX;
@@ -385,7 +385,7 @@
           }
         }
 
-        // Draw the dot
+        // Draw the dot - now circular because canvas isn't stretched
         ctx.beginPath();
         ctx.arc(dot.x, drawY, dot.radius, 0, Math.PI * 2);
         const gradient = ctx.createRadialGradient(
@@ -433,6 +433,8 @@
 
       requestAnimationFrame(animate);
     }
+    
+    // Start animation
     animate();
   </script>
 </body>
