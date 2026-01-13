@@ -100,11 +100,11 @@
     }
 
     canvas {
-      position: absolute; /* Changed from fixed to absolute */
+      position: absolute;
       top: 0;
       left: 0;
       width: 100%;
-      height: 100%; /* Fixed: Changed from 100vh to 100% */
+      height: 100%;
       z-index: -2;
       pointer-events: none;
       will-change: transform;
@@ -261,43 +261,59 @@
       // Get the full document height
       const body = document.body;
       const html = document.documentElement;
-      const height = Math.max(
-        body.scrollHeight, 
-        body.offsetHeight, 
-        html.clientHeight, 
-        html.scrollHeight, 
-        html.offsetHeight
-      );
+      const contentHeight = document.querySelector('.content-wrapper').offsetHeight;
+      const padding = 100; // Extra padding for visual appeal
       
+      // Use the content height plus padding
       canvas.width = window.innerWidth;
-      canvas.height = height; // Full document height
+      canvas.height = contentHeight + padding;
     }
     
+    // Initial resize
     resizeCanvas();
     
-    // Recalculate canvas size on window resize
+    // Recalculate canvas size after page loads
+    window.addEventListener('load', () => {
+      setTimeout(resizeCanvas, 100); // Small delay to ensure everything is loaded
+    });
+    
+    // Recalculate on window resize
     window.addEventListener('resize', resizeCanvas);
 
     const mouse = { x: null, y: null, pageX: null, pageY: null };
     const dots = [];
-    const numDots = 60; // Reduced number for better performance
+    const numDots = 80; // Good number for performance
     const cursorInfluence = 120;
     const connectionDistance = 150;
 
-    // Initialize dots
-    for (let i = 0; i < numDots; i++) {
-      dots.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        vx: (Math.random() - 0.5) * 0.15,
-        vy: (Math.random() - 0.5) * 0.15,
-        radius: Math.random() * 2 + 1,
-        originalVx: 0,
-        originalVy: 0
-      });
-      dots[i].originalVx = dots[i].vx;
-      dots[i].originalVy = dots[i].vy;
+    // Initialize dots after canvas is sized
+    function initializeDots() {
+      dots.length = 0; // Clear existing dots
+      
+      // Distribute dots throughout the entire canvas height
+      for (let i = 0; i < numDots; i++) {
+        // Distribute more evenly throughout the height
+        const yPos = (i / numDots) * canvas.height;
+        const yVariance = Math.random() * 100 - 50; // ±50 pixels variance
+        
+        dots.push({
+          x: Math.random() * canvas.width,
+          y: Math.max(0, Math.min(canvas.height, yPos + yVariance)),
+          vx: (Math.random() - 0.5) * 0.2,
+          vy: (Math.random() - 0.5) * 0.1,
+          radius: Math.random() * 2 + 1.5,
+          originalVx: 0,
+          originalVy: 0
+        });
+        dots[i].originalVx = dots[i].vx;
+        dots[i].originalVy = dots[i].vy;
+      }
     }
+    
+    // Initialize dots after canvas is ready
+    setTimeout(() => {
+      initializeDots();
+    }, 100);
 
     document.addEventListener('mousemove', (e) => {
       mouse.x = e.clientX;
@@ -316,7 +332,7 @@
     function animate() {
       const scrollY = window.pageYOffset || document.documentElement.scrollTop;
       
-      // Clear only the visible portion for performance
+      // Clear the entire canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       // Update and draw dots
@@ -335,7 +351,7 @@
           const dist = Math.sqrt(dx * dx + dy * dy) || 0.0001;
           if (dist < cursorInfluence) {
             const force = (cursorInfluence - dist) / cursorInfluence;
-            const pushStrength = 0.06;
+            const pushStrength = 0.08;
             dot.vx += (dx / dist) * force * pushStrength;
             dot.vy += (dy / dist) * force * pushStrength;
           }
@@ -354,18 +370,18 @@
         const drawY = dot.y - scrollY;
         
         // Only draw if the dot is visible or near viewport
-        if (drawY < -50 || drawY > window.innerHeight + 50) {
+        if (drawY < -100 || drawY > window.innerHeight + 100) {
           continue;
         }
 
         // Calculate glow intensity based on mouse proximity
-        let glowIntensity = 0.4;
+        let glowIntensity = 0.5;
         if (mouse.pageX !== null && mouse.pageY !== null) {
           const dx = dot.x - mouse.pageX;
           const dy = dot.y - (mouse.pageY + scrollY);
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < cursorInfluence * 1.5) {
-            glowIntensity = 0.4 + (1 - dist / (cursorInfluence * 1.5)) * 0.6;
+            glowIntensity = 0.5 + (1 - dist / (cursorInfluence * 1.5)) * 0.6;
           }
         }
 
@@ -377,7 +393,7 @@
           dot.x, drawY, dot.radius * 3
         );
         gradient.addColorStop(0, `rgba(147, 197, 253, ${glowIntensity})`);
-        gradient.addColorStop(0.7, `rgba(96, 165, 250, ${Math.min(0.6, glowIntensity * 0.4)})`);
+        gradient.addColorStop(0.7, `rgba(96, 165, 250, ${Math.min(0.7, glowIntensity * 0.5)})`);
         gradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
         ctx.fillStyle = gradient;
         ctx.fill();
@@ -389,14 +405,14 @@
         const drawY1 = dot1.y - scrollY;
         
         // Skip if dot1 is far outside viewport
-        if (drawY1 < -100 || drawY1 > window.innerHeight + 100) continue;
+        if (drawY1 < -150 || drawY1 > window.innerHeight + 150) continue;
         
         for (let j = i + 1; j < dots.length; j++) {
           const dot2 = dots[j];
           const drawY2 = dot2.y - scrollY;
           
           // Skip if dot2 is far outside viewport
-          if (drawY2 < -100 || drawY2 > window.innerHeight + 100) continue;
+          if (drawY2 < -150 || drawY2 > window.innerHeight + 150) continue;
           
           const dx = dot1.x - dot2.x;
           const dy = dot1.y - dot2.y;
@@ -404,9 +420,9 @@
           
           if (distSq < connectionDistance * connectionDistance) {
             const dist = Math.sqrt(distSq);
-            const opacity = (1 - dist / connectionDistance) * 0.15;
+            const opacity = (1 - dist / connectionDistance) * 0.2;
             ctx.strokeStyle = `rgba(96, 165, 250, ${opacity})`;
-            ctx.lineWidth = 0.4;
+            ctx.lineWidth = 0.5;
             ctx.beginPath();
             ctx.moveTo(dot1.x, drawY1);
             ctx.lineTo(dot2.x, drawY2);
