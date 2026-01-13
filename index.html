@@ -28,9 +28,7 @@
       --mouse-y: 50%;
     }
 
-    html, body {
-      height: 100%;
-    }
+    html, body { height: 100%; }
 
     body {
       background: #0b0614;
@@ -41,10 +39,13 @@
     .glow-border {
       position: relative;
       border: 1px solid rgba(59, 130, 246, 0.4);
-      box-shadow:
-        0 0 20px rgba(59, 130, 246, 0.25);
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.25);
+      /* ensure the element establishes its own containing block for the pseudo element */
+      --mouse-x: 50%;
+      --mouse-y: 50%;
     }
 
+    /* Pseudo-element uses the element's --mouse-x / --mouse-y (so coordinates are element-local) */
     .glow-border::before {
       content: "";
       position: absolute;
@@ -58,11 +59,11 @@
       );
       pointer-events: none;
       z-index: -1;
+      transition: background-position 0s; /* immediate positioning */
     }
 
     table {
       border-collapse: collapse;
-      /* help avoid unexpected overflow by fixing layout */
       table-layout: fixed;
       width: 100%;
     }
@@ -86,15 +87,10 @@
       pointer-events: none;
     }
 
-    .content-wrapper {
-      position: relative;
-      z-index: 1;
-    }
+    .content-wrapper { position: relative; z-index: 1; }
 
-    /* small helper to remove scrollbars inside the table container */
     .no-scroll {
-      overflow: visible; /* prevents internal scrollbars */
-      /* 65% translucent background */
+      overflow: visible;
       background: rgba(18, 10, 36, 0.65);
     }
   </style>
@@ -112,103 +108,111 @@
       <strong>Pages Covered:</strong> 1–100 (Act I)
     </p>
 
-    <!-- replaced overflow-x-auto with no-scroll and applied translucent background -->
-    <div class="no-scroll glow-border rounded-2xl">
+    <div class="no-scroll glow-border rounded-2xl" id="glowTable">
       <table class="w-full">
         <thead>
           <tr class="bg-[#1a1033] text-blue-200">
-            <th class="border p-4 w-1/2 text-left">
-              Passage
-            </th>
-            <th class="border p-4 w-1/6 text-center">
-              Page
-            </th>
-            <th class="border p-4 w-1/3 text-left">
-              Response
-            </th>
+            <th class="border p-4 w-1/2 text-left">Passage</th>
+            <th class="border p-4 w-1/6 text-center">Page</th>
+            <th class="border p-4 w-1/3 text-left">Response</th>
           </tr>
         </thead>
-
         <tbody>
           <tr class="align-top">
-            <td class="border p-4">
-              1. "Is that my little lark twittering out there?"
-            </td>
+            <td class="border p-4">1. "Is that my little lark twittering out there?"</td>
             <td class="border p-4 text-center">~3–5</td>
-            <td class="border p-4">
-              <strong>(R, E)</strong> Torvald's pet names immediately reduce Nora to something decorative and fragile. On a broader level, this reflects how language can enforce power dynamics—affectionate words can still be controlling. Ibsen seems to be critiquing how patriarchy disguises dominance as love.
-            </td>
+            <td class="border p-4"><strong>(R, E)</strong> Torvald's pet names immediately reduce Nora...</td>
           </tr>
-
           <tr class="align-top">
-            <td class="border p-4">
-              2. "No debt, no borrowing. There can be no freedom or beauty about a home life that depends on borrowing and debt."
-            </td>
+            <td class="border p-4">2. "No debt, no borrowing..."</td>
             <td class="border p-4 text-center">~8–9</td>
-            <td class="border p-4">
-              <strong>(E, Q)</strong> Torvald equates moral purity with financial purity, suggesting that debt is a moral failure. Ibsen may be questioning whether these rigid moral standards actually ignore human realities. Is Torvald truly moral, or simply obsessed with appearances?
-            </td>
+            <td class="border p-4"><strong>(E, Q)</strong> Torvald equates moral purity with financial purity...</td>
           </tr>
-
           <tr class="align-top">
-            <td class="border p-4">
-              3. "It was I who saved Torvald's life."
-            </td>
+            <td class="border p-4">3. "It was I who saved Torvald's life."</td>
             <td class="border p-4 text-center">~17–18</td>
-            <td class="border p-4">
-              <strong>(R)</strong> This moment reframes Nora entirely. She is not merely a dependent wife but someone capable of decisive, courageous action. Broadly, the passage suggests that society often underestimates people—especially women—by confusing obedience with weakness.
-            </td>
+            <td class="border p-4"><strong>(R)</strong> This moment reframes Nora entirely...</td>
           </tr>
-
           <tr class="align-top">
-            <td class="border p-4">
-              4. "A wife cannot borrow without her husband's consent."
-            </td>
+            <td class="border p-4">4. "A wife cannot borrow without her husband's consent."</td>
             <td class="border p-4 text-center">~20–22</td>
-            <td class="border p-4">
-              <strong>(R, C)</strong> This line highlights how the law itself enforces inequality. It connects to the real world, where legal systems historically limited women's autonomy. Ibsen exposes how morality and legality are not always aligned with justice.
-            </td>
+            <td class="border p-4"><strong>(R, C)</strong> This line highlights how the law itself enforces inequality...</td>
           </tr>
-
           <tr class="align-top">
-            <td class="border p-4">
-              5. "It was like being a man."
-            </td>
+            <td class="border p-4">5. "It was like being a man."</td>
             <td class="border p-4 text-center">~28–30</td>
-            <td class="border p-4">
-              <strong>(R, E)</strong> Nora associates independence and financial agency with masculinity. This reflects how society defines competence as male by default. Ibsen appears to criticize a world where human capability is gendered rather than universal.
-            </td>
+            <td class="border p-4"><strong>(R, E)</strong> Nora associates independence and financial agency with masculinity...</td>
           </tr>
-
           <tr class="align-top">
-            <td class="border p-4">
-              6. Krogstad: "I have means to compel you."
-            </td>
+            <td class="border p-4">6. Krogstad: "I have means to compel you."</td>
             <td class="border p-4 text-center">~33–35</td>
-            <td class="border p-4">
-              <strong>(P, R)</strong> This threat signals that Nora's secret will drive the central conflict of the play. More broadly, it shows how systems built on shame and reputation allow manipulation to flourish. I predict Nora's moral sacrifice will be judged harshly by society rather than admired.
-            </td>
+            <td class="border p-4"><strong>(P, R)</strong> This threat signals that Nora's secret will drive the central conflict...</td>
           </tr>
         </tbody>
       </table>
     </div>
 
     <p class="mt-8 text-gray-300 max-w-4xl">
-      <strong>Overall Reflection:</strong> Act I establishes the contrast between appearance and reality. Nora's cheerful domestic role masks intelligence, sacrifice, and desperation, while Torvald's moral certainty masks selfishness. Ibsen invites readers to question social norms that define worth through obedience rather than integrity.
+      <strong>Overall Reflection:</strong> Act I establishes the contrast between appearance and reality...
     </p>
   </div>
 
   <script>
-    // Glow border mouse tracking
-    document.addEventListener("mousemove", (e) => {
-      document.documentElement.style.setProperty("--mouse-x", `${e.clientX}px`);
-      document.documentElement.style.setProperty("--mouse-y", `${e.clientY}px`);
-    });
+    // Glow border mouse tracking (element-relative coordinates + scroll/resize handling)
+    (function() {
+      const glowEl = document.getElementById('glowTable'); // the .glow-border element
+      let lastMouse = { x: null, y: null };
 
-    // Floating dots canvas animation - tuned for slower, bigger, brighter dots
+      function setGlowPositionClient(clientX, clientY) {
+        const rect = glowEl.getBoundingClientRect();
+        // local coordinates relative to the element
+        const localX = clientX - rect.left;
+        const localY = clientY - rect.top;
+        // clamp inside the element bounds so the "at" position stays reasonable
+        const clampedX = Math.max(0, Math.min(localX, rect.width));
+        const clampedY = Math.max(0, Math.min(localY, rect.height));
+        glowEl.style.setProperty('--mouse-x', `${clampedX}px`);
+        glowEl.style.setProperty('--mouse-y', `${clampedY}px`);
+      }
+
+      // on mouse move: update lastMouse and set element-local vars
+      document.addEventListener('mousemove', (e) => {
+        lastMouse.x = e.clientX;
+        lastMouse.y = e.clientY;
+        setGlowPositionClient(e.clientX, e.clientY);
+      });
+
+      // on mouse leave: clear the lastMouse and optionally move glow to center
+      document.addEventListener('mouseleave', () => {
+        lastMouse.x = null;
+        lastMouse.y = null;
+        // fallback to center of the element when cursor is gone
+        const r = glowEl.getBoundingClientRect();
+        glowEl.style.setProperty('--mouse-x', `${r.width / 2}px`);
+        glowEl.style.setProperty('--mouse-y', `${r.height / 2}px`);
+      });
+
+      // When the page scrolls or resizes, re-calc the element-local coordinates
+      // using the last known client mouse coords so the glow stays under the cursor
+      function recomputeOnLayoutChange() {
+        if (lastMouse.x !== null && lastMouse.y !== null) {
+          setGlowPositionClient(lastMouse.x, lastMouse.y);
+        } else {
+          // if we don't have last mouse, center the glow for a clean fallback
+          const r = glowEl.getBoundingClientRect();
+          glowEl.style.setProperty('--mouse-x', `${r.width / 2}px`);
+          glowEl.style.setProperty('--mouse-y', `${r.height / 2}px`);
+        }
+      }
+
+      window.addEventListener('scroll', recomputeOnLayoutChange, { passive: true });
+      window.addEventListener('resize', recomputeOnLayoutChange);
+    })();
+
+
+    // Floating dots canvas animation - tuned as before (slower, bigger, brighter)
     const canvas = document.getElementById('dotCanvas');
     const ctx = canvas.getContext('2d');
-    
     function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -217,54 +221,42 @@
     window.addEventListener('resize', resizeCanvas);
 
     const mouse = { x: null, y: null };
-
     const dots = [];
     const numDots = 150;
-
-    // Reduced influence radius so cursor affects a smaller area
-    let cursorInfluence = 120; // previously 200
-
-    // Distance for connecting lines
+    let cursorInfluence = 120;
     const connectionDistance = 150;
 
     class Dot {
       constructor() {
         this.x = Math.random() * canvas.width;
         this.y = Math.random() * canvas.height;
-        // make base speeds smaller so dots feel more "stable"
-        this.vx = (Math.random() - 0.5) * 0.2; // smaller range than before
+        this.vx = (Math.random() - 0.5) * 0.2;
         this.vy = (Math.random() - 0.5) * 0.2;
-        this.radius = Math.random() * 3 + 2; // larger: between ~2 and ~5
+        this.radius = Math.random() * 3 + 2;
         this.originalVx = this.vx;
         this.originalVy = this.vy;
       }
 
       update() {
-        // Stronger damping back to original velocity -> harder to permanently push dots
-        const returnFactor = 0.12; // increased from 0.05
+        const returnFactor = 0.12;
         this.vx += (this.originalVx - this.vx) * returnFactor;
         this.vy += (this.originalVy - this.vy) * returnFactor;
 
-        // Cursor interaction - push dots away but with much smaller force
         if (mouse.x !== null && mouse.y !== null) {
           const dx = this.x - mouse.x;
           const dy = this.y - mouse.y;
           const dist = Math.sqrt(dx * dx + dy * dy) || 0.0001;
-
           if (dist < cursorInfluence) {
             const force = (cursorInfluence - dist) / cursorInfluence;
-            // reduce multiplier so dots are harder to move
-            const pushStrength = 0.12; // previously 0.5
+            const pushStrength = 0.12;
             this.vx += (dx / dist) * force * pushStrength;
             this.vy += (dy / dist) * force * pushStrength;
           }
         }
 
-        // update position
         this.x += this.vx;
         this.y += this.vy;
 
-        // Wrap around edges
         if (this.x < 0) this.x = canvas.width;
         if (this.x > canvas.width) this.x = 0;
         if (this.y < 0) this.y = canvas.height;
@@ -272,13 +264,11 @@
       }
 
       draw() {
-        // brighter base glow intensity
-        let glowIntensity = 0.6; // was 0.3
+        let glowIntensity = 0.6;
         if (mouse.x !== null && mouse.y !== null) {
           const dx = this.x - mouse.x;
           const dy = this.y - mouse.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          
           if (dist < cursorInfluence * 1.5) {
             glowIntensity = 0.6 + (1 - dist / (cursorInfluence * 1.5)) * 0.6;
           }
@@ -286,8 +276,6 @@
 
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-
-        // Create radial gradient for a stronger glow
         const gradient = ctx.createRadialGradient(
           this.x, this.y, 0,
           this.x, this.y, this.radius * 6
@@ -295,11 +283,9 @@
         gradient.addColorStop(0, `rgba(147, 197, 253, ${glowIntensity})`);
         gradient.addColorStop(0.5, `rgba(96, 165, 250, ${Math.min(0.9, glowIntensity * 0.7)})`);
         gradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
-
         ctx.fillStyle = gradient;
         ctx.fill();
 
-        // Draw a brighter solid center
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius * 0.55, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(147, 197, 253, ${Math.min(1, glowIntensity * 0.95)})`;
@@ -307,12 +293,8 @@
       }
     }
 
-    // Initialize dots
-    for (let i = 0; i < numDots; i++) {
-      dots.push(new Dot());
-    }
+    for (let i = 0; i < numDots; i++) dots.push(new Dot());
 
-    // Track mouse position
     document.addEventListener('mousemove', (e) => {
       mouse.x = e.clientX;
       mouse.y = e.clientY;
@@ -323,17 +305,14 @@
       mouse.y = null;
     });
 
-    // Animation loop
     function animate() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw connections between nearby dots
       for (let i = 0; i < dots.length; i++) {
         for (let j = i + 1; j < dots.length; j++) {
           const dx = dots[i].x - dots[j].x;
           const dy = dots[i].y - dots[j].y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-
           if (dist < connectionDistance) {
             const opacity = (1 - dist / connectionDistance) * 0.18;
             ctx.strokeStyle = `rgba(96, 165, 250, ${opacity})`;
@@ -346,15 +325,9 @@
         }
       }
 
-      // Update and draw dots
-      dots.forEach(dot => {
-        dot.update();
-        dot.draw();
-      });
-
+      dots.forEach(dot => { dot.update(); dot.draw(); });
       requestAnimationFrame(animate);
     }
-
     animate();
   </script>
 </body>
